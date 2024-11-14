@@ -6,11 +6,13 @@ library(tidyr)
 library(shinythemes)
 library(scales)
 
+# Carregar os dados
+dados_amazon <- read.csv("dados_amazon.csv", stringsAsFactors = FALSE)
+
 # UI
 ui <- fluidPage(
   theme = shinytheme("flatly"),
   
-  # CSS customizado para os logos
   tags$head(
     tags$style(HTML("
       .logo-container {
@@ -25,7 +27,6 @@ ui <- fluidPage(
     "))
   ),
   
-  # Header com logos
   div(class = "logo-container",
       img(src = "amazon.png", class = "logo"),
       h2(class = "main-title", "Dashboard Amazon India"),
@@ -35,7 +36,6 @@ ui <- fluidPage(
   navbarPage(
     title = "",
     
-    # Aba de Visão Geral
     tabPanel("Visão Geral",
              fluidRow(
                column(3,
@@ -71,7 +71,6 @@ ui <- fluidPage(
              )
     ),
     
-    # Aba de Análise de Preços
     tabPanel("Análise de Preços",
              fluidRow(
                column(12,
@@ -80,7 +79,6 @@ ui <- fluidPage(
              )
     ),
     
-    # Aba de Análise de Avaliações
     tabPanel("Análise de Avaliações",
              fluidRow(
                column(6, plotlyOutput("wordcloud_plot")),
@@ -93,7 +91,6 @@ ui <- fluidPage(
 # Server
 server <- function(input, output, session) {
   
-  # Dados filtrados
   filtered_data <- reactive({
     data <- dados_amazon
     
@@ -109,7 +106,6 @@ server <- function(input, output, session) {
     return(data)
   })
   
-  # Distribuição de Preços
   output$preco_dist <- renderPlotly({
     plot_ly(data = filtered_data(),
             x = ~preco_real,
@@ -125,7 +121,6 @@ server <- function(input, output, session) {
              yaxis = list(title = "Frequência"))
   })
   
-  # Distribuição de Avaliações
   output$avaliacao_dist <- renderPlotly({
     plot_ly(data = filtered_data(),
             x = ~avaliacao,
@@ -136,7 +131,6 @@ server <- function(input, output, session) {
              yaxis = list(title = "Frequência"))
   })
   
-  # Relação Desconto x Avaliação
   output$desconto_avaliacao <- renderPlotly({
     plot_ly(data = filtered_data(),
             x = ~percentual_desconto,
@@ -150,7 +144,6 @@ server <- function(input, output, session) {
              yaxis = list(title = "Avaliação"))
   })
   
-  # Top Produtos mais Avaliados
   output$top_produtos <- renderPlotly({
     top_10 <- filtered_data() %>%
       arrange(desc(contagem_avaliacao)) %>%
@@ -166,7 +159,6 @@ server <- function(input, output, session) {
              yaxis = list(title = "Número de Avaliações"))
   })
   
-  # Tabela de Preços
   output$tabela_precos <- renderDT({
     filtered_data() %>%
       select(nome_produto, preco_real, preco_descontado, 
@@ -176,7 +168,6 @@ server <- function(input, output, session) {
                              "Desconto (%)", "Avaliação", "Qtd. Avaliações"))
   })
   
-  # Frequência de Avaliadores
   output$avaliadores_freq <- renderPlotly({
     top_avaliadores <- filtered_data() %>%
       group_by(nome) %>%
@@ -192,6 +183,14 @@ server <- function(input, output, session) {
       layout(title = "Top 10 Avaliadores",
              xaxis = list(title = "Avaliador"),
              yaxis = list(title = "Número de Avaliações"))
+  })
+  
+  # Removendo o gráfico wordcloud que estava indefinido
+  output$wordcloud_plot <- renderPlotly({
+    plot_ly() %>%
+      layout(title = "Análise de Palavras",
+             xaxis = list(showticklabels = FALSE),
+             yaxis = list(showticklabels = FALSE))
   })
 }
 
