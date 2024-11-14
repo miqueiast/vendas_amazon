@@ -1,0 +1,13 @@
+shiny::runApp()
+library(dplyr)
+library(readr)
+library(skimr)  # Para uma análise mais detalhada
+install.packages("skimr")
+library(dplyr)
+library(readr)
+library(skimr)  # Para uma análise mais detalhada
+# Leitura dos dados
+dados_amazon <- read.csv("dados_amazon.csv")
+# Visão geral básica dos dados
+glimpse(dados_amazon)
+runApp()

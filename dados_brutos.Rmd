@@ -1,0 +1,76 @@
+---
+title: "teste_2"
+author: "Miqueias"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+# Importando bibliotecas do R para análise
+library(tidyverse)
+library(dplyr)
+library(stringr)
+library(tm)
+library(SnowballC)
+library(tidytext)
+library(ggpmisc)
+library(gplots)
+
+# Lendo o arquivo CSV e exibindo informações sobre o dataset
+vendas_amazon <- read.csv("amazon.csv", sep = ",")
+
+
+str(vendas_amazon)
+head(vendas_amazon)
+
+# Verificando valores ausentes no dataset vendas_amazon
+valores_ausentes <- sum(is.na(vendas_amazon))
+paste("Número de valores ausentes:", valores_ausentes)
+
+# Tradução dos nomes das colunas
+colnames(vendas_amazon) <- c(
+  "id_produto", "nome_produto", "categoria", "preco_descontado", "preco_real", 
+  "percentual_desconto", "avaliacao", "contagem_avaliacao", "sobre_produto", 
+  "id_usuario", "nome_usuario", "id_avaliacao", "titulo_avaliacao", 
+  "conteudo_avaliacao", "link_imagem", "link_produto"
+)
+
+# Convertendo colunas preco_descontado, preco_real, percentual_desconto e avaliacao para numérico
+vendas_amazon$preco_descontado <- as.numeric(sub("₹", "", vendas_amazon$preco_descontado))
+vendas_amazon$preco_real <- as.numeric(sub("₹", "", vendas_amazon$preco_real))
+vendas_amazon$percentual_desconto <- as.numeric(sub("%", "", vendas_amazon$percentual_desconto))
+vendas_amazon$avaliacao <- as.numeric(vendas_amazon$avaliacao)
+vendas_amazon$contagem_avaliacao <- as.numeric(sub(",", "", vendas_amazon$contagem_avaliacao))
+
+# Substituindo NA por 0 nas colunas mencionadas
+vendas_amazon$preco_descontado <- as.numeric(ifelse(is.na(vendas_amazon$preco_descontado) | vendas_amazon$preco_descontado == "", 0, vendas_amazon$preco_descontado))
+vendas_amazon$preco_real <- as.numeric(ifelse(is.na(vendas_amazon$preco_real) | vendas_amazon$preco_real == "", 0, vendas_amazon$preco_real))
+vendas_amazon$percentual_desconto <- as.numeric(ifelse(is.na(vendas_amazon$percentual_desconto) | vendas_amazon$percentual_desconto == "", 0, vendas_amazon$percentual_desconto))
+vendas_amazon$avaliacao <- as.numeric(ifelse(is.na(vendas_amazon$avaliacao), 0, vendas_amazon$avaliacao))
+vendas_amazon$contagem_avaliacao <- as.numeric(ifelse(is.na(vendas_amazon$contagem_avaliacao) | vendas_amazon$contagem_avaliacao == "", 0, vendas_amazon$contagem_avaliacao))
+
+# Separando os dados da coluna "categoria"
+categorias_separadas <- str_split(vendas_amazon$categoria, "\\|")
+
+# Adicionando as categorias separadas ao dataframe
+vendas_amazon <- cbind(vendas_amazon, do.call(rbind, categorias_separadas))
+
+# Renomeando as novas colunas
+colnames(vendas_amazon)[grep("X", colnames(vendas_amazon))] <- paste0("categoria_", 1:max(sapply(categorias_separadas, length)))
+
+# Excluindo a coluna original "categoria"
+vendas_amazon <- vendas_amazon %>%
+  select(-categoria)
+# Criando a nova coluna 'nome' com os primeiros nomes
+vendas_amazon <- vendas_amazon %>%
+  mutate(nome = word(nome_usuario, 1))
+
+
+write.csv(vendas_amazon, file = "dados_amazon.csv", row.names = FALSE)
+
+```
